@@ -1,0 +1,104 @@
+package hud 
+{
+	import com.greensock.easing.Sine;
+	import com.greensock.TweenMax;
+	import flash.geom.Point;
+	import map.GameMap;
+	import starling.display.Image;
+	import starling.display.Sprite;
+	import starling.events.Touch;
+	import starling.events.TouchEvent;
+	import starling.events.TouchPhase;
+	import starling.textures.Texture;
+	
+	/**
+	 * ...
+	 * @author 0L4F
+	 */
+	public class Compass extends Image 
+	{
+		[Embed(source = "../media/textures/compassDrop.png")] 
+		private const CompassBitmap:Class;
+		private var compassImage:Image;
+		private var gameMap:GameMap;
+		
+		public function Compass(gameMap:GameMap) 
+		{
+			this.gameMap = gameMap;
+			
+			super(Texture.fromBitmap(new CompassBitmap()));
+			pivotX = 110; // this.width * 0.5;
+			pivotY = 110; // this.height * 0.5;
+			
+			//compassImage = new Image(Texture.fromBitmap(new CompassBitmap()));
+			//compassImage.pivotX = compassImage.width * 0.5;
+			//compassImage.pivotY = compassImage.height * 0.5;
+			//addChild(compassImage);
+			addEventListener(TouchEvent.TOUCH, touchIt);
+			
+		}
+		
+		private var touchId:int = -1;
+		private function touchIt(e:TouchEvent):void 
+		{
+			
+			// no registered touch:
+			if (touchId==-1) {
+				var touchDown:Touch = e.getTouch(this, TouchPhase.BEGAN);
+				if (touchDown) {
+					touchId = touchDown.id;
+					bootjeStart();
+					bootjeMove(touchDown);
+				}
+			}
+			
+			// registered touch:
+			if (touchId != -1) {
+				
+				// move
+				var touchMoves:Vector.<Touch> = e.getTouches(this, TouchPhase.MOVED);
+				var touchMoveCount:int = touchMoves.length;
+				var touchMove:Touch;
+				for (var i:int = 0; i < touchMoveCount; i++) {
+					touchMove = touchMoves[i];
+					if (touchMove.id == touchId) {
+						bootjeMove(touchMove);
+						break;
+					}
+				}
+				
+				// up
+				var touchEnds:Vector.<Touch> = e.getTouches(this, TouchPhase.ENDED);
+				var touchEndCount:int = touchEnds.length;
+				var touchEnd:Touch;
+				for (i = 0; i < touchEndCount; i++) {
+					touchEnd = touchEnds[i];
+					if (touchEnd.id == touchId) {
+						touchId = -1;
+						bootjeStop();
+						break;
+					}
+				}
+			}
+			
+		}
+		
+		private function bootjeStart():void {
+			gameMap.bootje.targetSpeed = BootjeTest.BOAT_SPEED;
+		}
+		
+		private function bootjeMove(touch:Touch):void {
+			var compassPoint:Point = touch.getLocation(this);
+			var relativeX:Number = compassPoint.x - pivotX;
+			var relativeY:Number = compassPoint.y - pivotY;
+			var direction:Number = Math.atan2(relativeY, relativeX);
+			gameMap.bootje.direction = direction;
+		}
+		
+		private function bootjeStop():void {
+			gameMap.bootje.targetSpeed = 0;
+		}
+		
+	}
+
+}
